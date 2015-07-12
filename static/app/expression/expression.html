@@ -1,0 +1,537 @@
+<md-text-float>
+    <md-subheader class="md-warn" ng-show="!closeAlert">
+        <button type="button" class="close" aria-label="Close" ng-click="closeAlert = true">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <strong><a href="#/view2/help">Here is some help to get started</a></strong>
+        Welcome on a prototype implementation of a Resource Oriented Knowledge discovery system specific to
+        RNA-Seq.<br/>
+        We're sorry for some usability issues that may occur by offering the software as-is. <br />
+        <b>In case something looks wrong, CTRL + F5 might fix the app blocked in a bad state</b><br/>
+    </md-subheader>
+</md-text-float>
+<div layout="row">
+    <md-card flex ng-hide="goMine || fullEda">
+        <img src="asset/img/experiment_small.jpg" class="md-card-image">
+        <md-card-content>
+            <div layout="column">
+                <h2>
+                    1 - Selected experiment is {{currentExperiment.experiment == null? "not known for the moment"
+                    :currentExperiment.experiment}}
+                </h2>
+
+                <div layout="column">
+                    <md-select ng-model="experimentSelection">
+                        <md-select-label>Select a virtual experiment</md-select-label>
+                        <md-option ng-value="e" ng-repeat="e in availableExperiments">{{e.data.public_identifier}}
+                        </md-option>
+                    </md-select>
+                    <p class="md-body-2" ng-if="experimentSelection">
+                        <b>Description</b>: {{currentExperiment.description}}<br/>
+                        <b>Type</b>: {{currentExperiment.experiment_type}}
+                    </p>
+                </div>
+                <md-content>
+                    <md-list>
+                        <md-list-item class="md-3-line" ng-repeat="d in currentExperiment.datasets">
+                            <div class="md-avatar" flex="10">
+                                <md-button class="md-fab md-mini md-accent" aria-label="FAB"
+                                           ng-click="selectedDataset(d)">
+                                    <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+                                </md-button>
+                            </div>
+                            <div class="md-list-item-text" flex="90">
+                                <h6><a href="http://wgs11.op.umcutrecht.nl/RNASeqTool/api/expression/dataset/{{d.data.public_identifier}}/file" target="_blank">{{d.data.public_identifier}}</a> </h6>
+                                <em>{{d.data.type}}</em> <br/>
+                                Generated with <em><a href="{{d.data.package.data.url_source}}" target="_blank">{{d.data.package.data.name}}
+                                ({{d.data.package.data.version}})</a></em> <br/>
+                                Run with <em>{{d.data.package.data.language}}</em>
+                            </div>
+                        </md-list-item>
+                    </md-list>
+                </md-content>
+            </div>
+        </md-card-content>
+    </md-card>
+    <md-card flex ng-hide="fullEda || goMine">
+        <img src="asset/img/freddie_small.jpg" class="md-card-image">
+
+        <md-card-content class="md-padding">
+            <h2>2 - Normalization and cleaning</h2>
+
+            <p class="md-body-2">
+                The selected data set is <b>{{selectedDataSet.data.public_identifier}}</b>
+            </p>
+
+            <md-radio-group ng-model="normalizationMethod" ng-change="getInfo()" ng-disabled="!selectedDataSet">
+                <md-radio-button value="normalization_count"
+                                 aria-label="COUNTNorm">
+                    Normalization for outliers
+                </md-radio-button>
+                <md-radio-button value="normalization_log"
+                                 aria-label="LOGNorm">
+                    Normalization for PCA or MDS
+                </md-radio-button>
+
+            </md-radio-group>
+
+            <md-divider></md-divider>
+
+            <div ng-show="normalizationMethod">
+                <section layout-padding layout="column">
+                    <h2 class="md-toolbar-tools">
+                        <span>Method information about {{normalizationMethod}}</span>
+                    </h2>
+
+                    <p ng-if="selectedNormalizationMethodName">
+                        You selected <b>{{selectedNormalizationMethodName}}</b>
+                    </p>
+                    <md-list ng-repeat="m in infoMethods">
+                        <md-list-item>
+                            <div class="md-avatar" flex="10">
+                                <md-button class="md-fab md-mini md-accent"
+                                           aria-label="FAB"
+                                           ng-click="selectNormalizationMethod(m)">
+                                    <span class="glyphicon glyphicon-book" aria-hidden="true"></span>
+                                </md-button>
+                            </div>
+
+                            <div class="md-list-item-text" flex="90">
+                                <table layout-padding>
+                                    <tr>
+                                        <th>Package</th>
+                                        <td>{{m.data.name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Version</th>
+                                        <td>{{m.data.version}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Language</th>
+                                        <td>{{m.data.language}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Source</th>
+                                        <td><a href="{{m.data.url_source}}" target="_blank">Link to
+                                            documentation</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Reference</th>
+                                        <td>{{m.data.reference}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </md-list-item>
+                    </md-list>
+                </section>
+            </div>
+
+            <p ng-show="selectedDataSet != null && selectedDataSet.data.type != 'raw gene counts'" class="alert-info">
+                Sorry, you have to select a "raw genes counts" dataset for this!
+            </p>
+
+            <md-button
+                    ng-disabled="processingInProgress || !selectedDataSet || selectedDataSet.data.type != 'raw gene counts'"
+                    class="md-raised" ng-click="preprocess()">
+                Preprocess
+            </md-button>
+            <md-progress-linear ng-if="processingInProgress" md-mode="indeterminate"></md-progress-linear>
+        </md-card-content>
+    </md-card>
+    <md-card flex ng-show="!goMine">
+        <img ng-if="!fullEda" src="asset/img/eda_small.jpg" class="md-card-image">
+        <md-card-content>
+            <h2>Exploratory data analysis</h2>
+
+            <md-text-float ng-if="!fullEda">
+                Activate the full EDA mode to explore datasets by switching the visualization panel on<br />
+                Or active the outlier mining screen by switching the mining panel on<br />
+            </md-text-float>
+            <md-content>
+                <div flex="50">
+                    <span id="charts" ng-bind-html="edaChart" ng-hide="!fullEda"/>
+                </div>
+                <div layout="row" flex ng-hide="!fullEda">
+
+                    <div layout-padding>
+                        <md-text-float><h3>Gene statistics</h3></md-text-float>
+                        <div style="width: 800px" ui-grid="edaOptions" ui-grid-pagination ui-grid-selection
+                             ui-grid-exporter
+                             id="sampleValuesTable">
+                        </div>
+                    </div>
+                    <div layout-padding layout="column">
+                        <md-text-float><h3>Plotting options</h3></md-text-float>
+                        <md-text-float ng-show="edaPlots">You selected {{edaPlots.name}}</md-text-float>
+                        <form>
+                            <md-select ng-model="edaPlots">
+                                <md-select-label>Select a chart</md-select-label>
+                                <md-option ng-value="plot" ng-repeat="plot in plotsForEda">{{ plot.name }}
+                                </md-option>
+                            </md-select>
+                        </form>
+                        <md-button ng-disabled="processingInProgress || !selectedDataSet || exploreBusy"
+                                   ng-click="compareEdaDatasets()">
+                            <md-tooltip>Comparison is made on the <b>Genes</b> that are selected, if applicable
+                            </md-tooltip>
+                            Compare
+                        </md-button>
+                    </div>
+                </div>
+                <md-progress-linear ng-if="exploreBusy" md-mode="indeterminate"></md-progress-linear>
+                <div layout="row" >
+                    <div flex="50">
+                        <md-text-float ng-hide="!fullEda">
+                            Select <b>max two datasets</b>. Or two datasets normalized with different methods or two datasets that
+                            have the same gene identifiers (Ensembl or other). <br />
+                            The matching is done on these identifiers.
+                        </md-text-float>
+                        <md-text-float>
+                            Check file gives only the first 5 rows, not the entire file.
+                        </md-text-float>
+                        <md-list flex>
+                            <md-list-item ng-repeat="ed in currentExperiment.datasets">
+                                <md-checkbox ng-model="ed.selected"></md-checkbox>
+                                <div class="md-list-item-text">
+                                    <h5>{{ed.data.public_identifier}} (<a href="http://wgs11.op.umcutrecht.nl/RNASeqTool/api/expression/dataset/{{ed.data.public_identifier}}/file" target="_blank">check content</a>)</h5>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </div>
+                    <div flex="50" ng-hide="!fullEda">
+                        <table class="table">
+                            <th>Dimension</th>
+                            <th>Total</th>
+                            <th>Selected</th>
+                            <tbody>
+                            <tr>
+                                <th>Genes</th>
+                                <td>{{edaMeta.genes}}</td>
+                                <td>{{numberSelectedGenes}}</td>
+                            </tr>
+                            <tr>
+                                <th>Samples</th>
+                                <td>{{edaMeta.samples}}</td>
+                                <td>{{numberSelectedSamples}}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </md-content>
+            <div class="md-actions" layout="row" layout-align="end center" flex>
+                <md-button ng-disabled="processingInProgress || !selectedDataSet || exploreBusy" class="md-raised"
+                           ng-click="loadEdaDatasets()">
+                    <md-tooltip>This will load the data from the first selected data set in the list</md-tooltip>
+                    Load Data
+                </md-button>
+                <md-button ng-disabled="processingInProgress || !selectedDataSet" class="md-raised"
+                           ng-click="fullEda = !fullEda">
+                    <md-tooltip>If you swith it on, the EDA panel will take the whole page, with all the options
+                    </md-tooltip>
+                    Full EDA {{fullEda ?"OFF":"ON" }}
+                </md-button>
+                <md-button ng-disabled="processingInProgress || !selectedDataSet" class="md-raised"
+                           ng-click="goMine = !goMine">
+                    <md-tooltip>To show the good old mining panel</md-tooltip>
+                    Mining panel {{goMine?"OFF":"ON"}}
+                </md-button>
+            </div>
+        </md-card-content>
+    </md-card>
+    <md-card flex ng-show="goMine">
+        <img src="asset/img/experiment_small.jpg" class="md-card-image">
+        <md-card-content>
+            <md-text-float>
+                <md-subheader class="md-accent" ng-show="!closeAlert3">
+                    <button type="button" class="close" aria-label="Close" ng-click="closeAlert3 = true">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    Here you can apply an algorithm to the data (basically also a method but on "normalized" data)
+                    <ul>
+                        <li>There is one algorithm available</li>
+                        <li>You can customized the parameters</li>
+                    </ul>
+                    When you receive a message indicating that the job is created, <a href="#/expression/visualization">
+                    go to visualization</a>
+                </md-subheader>
+            </md-text-float>
+
+            <h2>Filter genes (outlier detection)</h2>
+
+            <p>Select outlier detection method</p>
+
+            <p class="md-body-2">
+                The selected data set is <b>{{selectedDataSet.data.public_identifier}}</b>
+            </p>
+
+            <md-radio-group ng-model="mine" ng-change="getInfoMine()" ng-disabled="!selectedDataSet">
+                <md-radio-button value="kmeans_outliers"
+                                 aria-label="KMEANSOutlier">
+                    Find outliers with clustering
+                </md-radio-button>
+                <md-radio-button value="mad"
+                                 aria-label="MADOutlier">
+                    Find outliers with Median Absolute Deviation (MAD)
+                </md-radio-button>
+
+            </md-radio-group>
+
+            <md-divider></md-divider>
+
+            <div ng-show="mine" layout="column">
+                <div ng-messages="miningForm.sampleMeasure.$error" ng-if='miningForm.sampleMeasure.$dirty'>
+                    <div ng-message="required">You must enter a maximal sample support for the outlier class<br />
+                    </div>
+                    <div ng-message="min">Minimum 5 <br /></div>
+                    <div ng-message="max">Maximum half of the dataset (50%) <br /></div>
+                </div>
+                <div ng-messages="miningForm.distanceMeasure.$error" ng-if='miningForm.distanceMeasure.$dirty'>
+                    <div ng-message="required">You must enter a distance to filter the outlier list<br/></div>
+                    <div ng-message="min">Minimum 0.1 (not recommended)<br/></div>
+                    <div ng-message="max">Maximum 0.99 (the strong outliers only)<br/></div>
+                </div>
+                <form name="miningForm" ng-hide="infoMethodsMine === undefined || infoMethodsMine.length == 0">
+                    <md-input-container>
+                        <label>Max samples</label>
+                        <input name="sampleMeasure" ng-model="maxSamples" min="5" max="50" type="number" required=""
+                               step="any">
+                    </md-input-container>
+                    <md-input-container>
+                        <label>Minimum distance</label>
+                        <input name="distanceMeasure" ng-model="distance" min="0.1" max="0.99" type="number" required=""
+                               step="any">
+                    </md-input-container>
+                </form>
+                <section layout-padding layout="column">
+                    <h2 class="md-toolbar-tools">
+                        <span>Method information about {{mine.data.public_identifier}}</span>
+                    </h2>
+
+                    <p class="bg-info">
+                        Do not forget to select a method below before scheduling a job (click on the icon on the left
+                        of each method)
+                    </p>
+
+                    <p class="bg-warning" ng-if="infoMethodsMine === undefined || infoMethodsMine.length == 0">
+                        There are no implementation of the selected method available.
+                    </p>
+
+                    <md-list ng-repeat="mm in infoMethodsMine" ng-show="infoMethodsMine !== undefined && infoMethodsMube.length != 0">
+                        <md-list-item>
+                            <div class="md-avatar" flex="10">
+                                <md-button class="md-fab md-mini md-accent" aria-label="FAB"
+                                           ng-click="selectMiningMethod(mm)">
+                                    <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+                                </md-button>
+                            </div>
+                            <div class="md-list-item-text" flex="90">
+                                <table layout-padding>
+                                    <tr>
+                                        <th>Package</th>
+                                        <td>{{mm.data.name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Version</th>
+                                        <td>{{mm.data.version}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Language</th>
+                                        <td>{{mm.data.language}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Source</th>
+                                        <td><a href="{{mm.data.url_source}}" target="_blank">Link to documentation</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Reference</th>
+                                        <td>{{mm.data.reference}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </md-list-item>
+                    </md-list>
+                </section>
+            </div>
+            <p ng-if="mine.data">
+                You selected <b>{{mine.data.public_identifier}}</b>
+            </p>
+
+            <div layout="row">
+                <md-button ng-click="scheduleJob()" class="md-raised" ng-disabled="!mine.data">Schedule Job</md-button>
+                <md-button ng-disabled="processingInProgress || !selectedDataSet" class="md-raised"
+                           ng-click="goMine = false">
+                    Show experiments
+                </md-button>
+            </div>
+            <md-progress-linear ng-if="miningInProgress" md-mode="indeterminate"></md-progress-linear>
+        </md-card-content>
+    </md-card>
+    <div flex="70" ng-show="goMine">
+        <div layout="column" flex layout-fill>
+            <div layout="row">
+                <md-card flex="40">
+                    <md-card-content>
+                        <md-text-float>
+                            <md-subheader class="md-accent" ng-show="!closeAlert4">
+                                <button type="button" class="close" aria-label="Close" ng-click="closeAlert4 = true">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                                You can select a scatterplot or a heatmap, then export it to a PDF<br/>
+                                But before, you have to load a list of genes or to execute a job (see below)
+                            </md-subheader>
+                        </md-text-float>
+                        <md-text-float class="text-info">
+                            <p>Select the plotting options below, these will be applied to the charts generated by "Show
+                                chart"</p>
+
+                            <p>First, create a chart by selecting genes in the table below.<br/> Next, click on show
+                                chart to display a dynamic chart in the browser.<br/>
+                                Finally, if you want to save the chart as a PDF (scatterplot, heatmap), click on "export
+                                as PDF". <br/>
+                                The file opens in the browser (or will be downloadable).
+                            </p>
+
+                            <p ng-if="selectedMineChart">
+                                You selected <b>{{selectedMineChart.name}}</b> as a chart type
+                            </p>
+                        </md-text-float>
+                        <div layout="column">
+                            <md-select id="selectChartTypeMining" ng-model="selectedMineChart" flex="50">
+                                <md-select-label>Select a type of chart</md-select-label>
+                                <md-option ng-value="c" ng-repeat="c in chartTypes">{{c.name}}</md-option>
+                            </md-select>
+                            <md-button ng-click="compareGeneDistribution('html', selectedMineChart)" class="md-raised">
+                                Show chart
+                            </md-button>
+                            <md-button class="md-raised" ng-show="currentChart"
+                                       ng-click="compareGeneDistribution('pdf', selectedMineChart)">Export as PDF
+                            </md-button>
+                        </div>
+                    </md-card-content>
+                </md-card>
+                <div flex="60">
+                    <span id="chartsMining" ng-bind-html="currentChart"/>
+
+                    <div ng-if="!currentChart">
+                        <p>
+                            Charts will appear in this area, select some genes in the table below and a chart type in
+                            the
+                            panel
+                            on the left side
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <md-divider></md-divider>
+            <div ng-if="processingInProgress || miningInProgress" layout-padding>
+                <md-progress-linear md-mode="indeterminate"></md-progress-linear>
+                <br/>
+                <strong ng-if="miningInProgress">{{ gridOptions.data.length }} rows imported</strong>
+            </div>
+            <md-divider></md-divider>
+            <div layout="row">
+                <md-card flex>
+                    <md-card-content>
+                        <md-text-float>
+                            <md-subheader class="md-accent" ng-show="!closeAlert5">
+                                <button type="button" class="close" aria-label="Close" ng-click="closeAlert5 = true">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                                In this panel, you will find a list of the jobs you created on the previous part
+                                (Datasets and jobs) or a list of data sets that are
+                                attached to the current experiment.
+                                <ul>
+                                    <li>With Retrieve Genes you will get a list of the genes that are in the RNA-Seq
+                                        counts matrix
+                                    </li>
+                                    <li>With Execute Job, you will perform the outlier mining and get outliers in
+                                        Real-time
+                                    </li>
+                                    <li>Remark: It may happen that the outliers are not streamed... in any case, leave
+                                        the page open while you see the loading animation
+                                    </li>
+                                </ul>
+                        </md-text-float>
+                        <div layout-padding>
+                            <md-text-float ng-if="!currentExpIdentifier">
+                                <md-subheader class="md-primary">Unread Messages
+                                    Select a virtual experiment before starting to explore the datasets. <br/>
+                                    Go <a href="#/expression/">to the first page</a> and your experiment will be loaded
+                                    on this
+                                    page.
+                                </md-subheader>
+                            </md-text-float>
+                            <md-text-float>
+                                <md-subheader class="md-warn">
+                                    Please note that the export to PDF module is not installed (but CSV is ok).
+                                </md-subheader>
+                            </md-text-float>
+                            <p ng-hide="selectedDataSet == null" class="md-caption">
+                                The <b>experiment</b> that you loaded is: {{ currentExpIdentifier }} and the
+                                <b>dataset</b>
+                                {{selectedDataSet.data.public_identifier}} is selected.
+                            </p>
+
+                            <div ng-hide="existingMiningTask == null">
+                                <p class="md-caption">
+                                    The <b>mining</b> task that you selected is based on
+                                    {{existingMiningTask.data.method.data.name}} and uses the following parameters:
+                                </p>
+                                <ul>
+                                    <li>Distance : {{existingMiningTask.data.distance}}</li>
+                                    <li>Samples : {{existingMiningTask.data.samples}}%</li>
+                                </ul>
+                                <i>Description: </i>
+                                <em>{{existingMiningTask.data.method.data.description}}</em>
+
+                                <p>
+                                    The mining task identifier is :
+                                    {{existingMiningTask.data.job.data.public_identifier}}
+                                </p>
+                            </div>
+
+                            <md-divider></md-divider>
+
+                            <md-whiteframe layout layout-align="center center">
+                                <div class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection
+                                     ui-grid-exporter
+                                     id="sampleValuesTableMining">
+                                </div>
+                            </md-whiteframe>
+                        </div>
+                    </md-card-content>
+                    <md-action-bar layout="row" layout-align="end center">
+                        <md-select ng-model="selectedDataSet" flex="10">
+                            <md-select-label>
+                                Select a dataset
+                            </md-select-label>
+                            <md-option ng-value="d" ng-repeat="d in datasets">
+                                {{d.data.public_identifier}}
+                            </md-option>
+                        </md-select>
+
+                        <md-button ng-disabled="processingInProgress" ng-click="sampleSelected()" class="md-raised">
+                            Retrieve genes
+                        </md-button>
+                        <md-select ng-model="existingMiningTask" flex="20">
+                            <md-select-label>
+                                Select an existing mining task
+                            </md-select-label>
+                            <md-option ng-value="t" ng-repeat="t in existingMiningTasks">
+                                {{t.data.public_identifier}}
+                            </md-option>
+                        </md-select>
+                        <md-button ng-disabled="processingInProgress"
+                                   ng-click="executeJob(existingMiningTask.data.job.href)" class="md-raised">
+                            Execute Job
+                        </md-button>
+                    </md-action-bar>
+                </md-card>
+            </div>
+        </div>
+    </div>
+</div>
+</div>

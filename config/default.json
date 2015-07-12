@@ -1,0 +1,17 @@
+{
+  "demo_data_set_raw": "",
+  "demo_data_set_norm": "",
+  "application_base_url":"http://127.0.0.1:5000/api",
+  "application_base_location": "",
+  "application_files_location": "",
+  "application_store_name":  "",
+  "domain": "",
+  "static_documents":"/static/documents/",
+  "db_string": {
+    "uri_base": "",
+    "database": "",
+    "user": "",
+    "password": "",
+    "sql_url": "mysql://usr:pass@host/db"
+  }
+}

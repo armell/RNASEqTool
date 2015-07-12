@@ -1,0 +1,144 @@
+<div flex>
+<!--    <md-text-float>
+        <md-subheader class="md-warn" ng-show="closeAlert10">
+            <button type="button" class="close" aria-label="Close" ng-click="closeAlert10 = false">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            Here you can upload new datasets, drop csv files with genes as features and change their public identifier.<br />
+            The data will be attached to a raw data container , then you can link a file to an experiment.<br />
+            The experiment will contain the transformed data sets with info about which package was used.
+        </md-subheader>
+    </md-text-float>-->
+    <div layout="column" flex>
+        <div layout="row">
+            <div layout="column" flex layout-padding>
+                <h3>Drop your files in the area below</h3>
+
+                <div ng-file-drop ng-model="files" class="drop-box"
+                     drag-over-class="dragover" ng-multiple="true" allow-dir="true"
+                     accept=".txt, .csv">
+
+                    <p>Drop one or more files here</p>
+
+                    <p> TSV files are allowed, columns should be separated by a tab (\t) character</p>
+                    <p><b> Be careful that the data should be counts only (integer values) not floating points</b></p>
+                    <p><b> Caution! The first column is used as an index (gene ensembl id)</b></p>
+                    <p> You can upload normalized counts but it will unfortunately be tracked as raw counts for now, for this just edit the public identifier with the package you used: PACKAGE_V1_1_1_data_set</p>
+                </div>
+                <div ng-no-file-drop>File Drag/Drop is not supported for this browser
+                    <p>If you prefer to select a file use the Select File option below:</p>
+
+                    <p><input type="checkbox" ng-model="multiple"> Check if you want to upload multiple files</p>
+
+                    <div class="btn btn-primary" ng-file-select ng-file-change="upload($files)" ng-multiple="multiple">
+                        Select
+                        File
+                    </div>
+                </div>
+            </div>
+            <div flex layout-padding>
+                <h3>Uploading status</h3>
+
+                <p>The uploaded datasets will be listed below, they will be saved as resources.</p>
+
+                <div ng-repeat="file in filesMonitoring">
+                    <div>
+                        <p>{{file.filename}}</p>
+
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" aria-valuenow="{{file.progress}}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100" style="width: {{file.progress}}%">
+                                <span class="sr-only">{{file.progress}}% Complete</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div flex layout-padding>
+                <h3>Metadata</h3>
+
+                <p>Description of the uploaded datasets</p>
+
+                <form>
+                    <div class="form-group" ng-repeat="f in savedFiles">
+                        <p>The md5 hash as computed by the server is : <i>{{f.server_md5}}</i></p>
+                        <md-input-container>
+                            <label for="uploadedFilename">Public identifier</label>
+                            <input class="form-control" type="text" value="{{f.filename}}" id="uploadedFilename"
+                                   ng-model="f.filename">
+                        </md-input-container>
+                        <!--<select>TOLINK TO EXP</select>-->
+
+                        <div class="btn btn-default pull-left" type="button"
+                             ng-click="updatedMetadata(f.intern_identifier)">
+                            Save
+                        </div>
+                        <br/>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <div class="column" flex>
+            <div layout="row" layout-padding layout-margin layout-align="start start">
+                <div layout="row" layout-padding>
+                    <md-input-container>
+                        <label for="researchResourceByName">Filter datasets based on full-text filter</label>
+                        <input type="text" id="researchResourceByName" ng-model="query">
+                    </md-input-container>
+                </div>
+                <form>
+                    <div layout="column">
+
+                        <md-select ng-model="selectedExperiment">
+                            <md-select-label>Link to experiment</md-select-label>
+                            <md-option ng-value="e" ng-repeat="e in displayExperiments">{{e.data.public_identifier}}
+                                ({{e.data.created_on | date:'dd-MM-yyyy'}})
+                            </md-option>
+                        </md-select>
+
+                    </div>
+                    <div>
+                        <md-button ng-click="showConfirm($event)" ng-disabled="!selectedExperiment">Link data to
+                            experiment
+                        </md-button>
+                    </div>
+                </form>
+            </div>
+            <div>
+                <table class="table">
+                    <thead>
+                    <th>Select</th>
+                    <th>Public identifier</th>
+                    <th>Type of data</th>
+                    <th>Package</th>
+                    <th>Experiment</th>
+                    <th>Download</th>
+                    <!--<th>Delete</th>-->
+                    </thead>
+                    <tbody>
+                    <tr ng-class="{active: hover}" ng-mouseenter="hover = true" ng-mouseleave="hover = false"
+                        ng-repeat="f in displayFiles | filter:query">
+                        <td>
+                            <md-checkbox ng-model="f.active" aria-label="checkbox + f.public_identifier"></md-checkbox>
+                        </td>
+                        <td>{{f.data.public_identifier}}</td>
+                        <td>{{f.data.type}}</td>
+                        <td><a href="{{f.data.package.data.url_source}}" target="_blank">{{f.data.package.data.name}}</a> </td>
+                        <td>{{f.data.experiment}}</td>
+                        <td><a class="btn btn-info" href="{{f.href}}/file" download="{{f.href}}.csv" role="button"
+                               target="_blank">Download</a></td>
+                        <!--<td><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></td>-->
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!--<p>
+    Showing of 'interpolate' filter:
+    {{ 'Current version is v%VERSION%.' | interpolate }}
+</p>-->

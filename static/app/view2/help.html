@@ -1,0 +1,102 @@
+<md-content>
+    <section layout="row">
+    <img src="asset/img/help/menu_upload.png">
+
+    <div>
+        <h2>What is this tool about?</h2>
+
+        <div>
+            The tool is used to normalize datasets and to mine for outliers in RNA-Seq data files.
+            For now, as a user you can upload a new matrix of raw read counts (caution, each feature must be a gene
+            ((no exons, too big)).
+            Then it will be attached to a default virtual experiment called Raw Data Container.<br/>
+        </div>
+        <h4>How can I test it?</h4>
+
+        <div>
+            <ol>
+                <li>Go to dataset and jobs</li>
+                <li>Select experiment exp_umc_outlier in the select experiment menu</li>
+                <li>Click on the icon on the left of DESeq_1_18_0_umc_read_counts_table_without_8433 and notice that the
+                    interface is immediately adapted without loading the page (oh yeah)
+                </li>
+                <li>In the menu click on Visualization</li>
+                <li>Below the table, in select an existing mining task, select kmeans_outliers_DESeq</li>
+                <li>The weird id in the "tail" of the mining task identifier is just to pretend that we somehow
+                    identified a job running in the cluster (but it's fake, still important to show the concepts
+                    involved)
+                </li>
+                <li>Click on Execute Job</li>
+                <li>While the outliers are streamed to the table, you should be able to plot them</li>
+                <li>Answer the survey <a
+                        href="https://docs.google.com/forms/d/1RSrRNy29cAk-VSz6iWXpzLYW3r60A52gDJ34wcngcPU/viewform">
+                    here</a></li>
+                <li>I'm usually torturing a keyboard in the flex-room, if your computer ended in the ceiling while using
+                    this tool, feel free to <s>punch</s> contact me
+                </li>
+            </ol>
+        </div>
+    </div>
+    </section>
+
+    <section layout="row">
+        <div flex="60">
+            <h2>How to mine a new dataset for outliers?</h2>
+            First, you have to "schedule a job", this pattern is only for demonstration purposes (technically, the parameters entered and the dataset are saved in a database).
+            The way to ask to schedule a job is just to "force" the end-user to act on this application as if was running together with a cluster.<br />
+            <strong>To schedule a job </strong> select as outlier method UMC. Then, schedule this job. You will find it back in the list of "mining tasks"in the Visualization page (see menu). <br />
+            We recommend to use a <b>DESEQ normalized dataset</b> for this. The counts will not be transformed (e.g. log transformation) and
+            are fine for the KMEANS based algorithm that will return a (large) number of potentially interesting genes. <br />
+            The filtering is not strict but gives information about the distance between the max point in the "non outlier cluster" and the max point in
+            the "outlier cluster". <br />
+            Together with the range of the data (the difference between the max. point and the min. point - with counts from 2 to 15, the range will be 13 -) and the
+            sample support (ideally not too much samples should be clustered with the max point), don't hesitate to filter this data based on these parameters! <br />
+            An "excel like" dynamic table supports filtering and you can plot a selection of genes while the clustering is performed. <br />
+            <strong>Leave the page open while the clustering is going on</strong>, just like streaming a movie, if the page is closed the mining is aborted. <br />
+            At any moment, you can export the content of the table as a CSV file (comma separated) to continue the analysis with other tools.<br />
+        </div>
+        <div>
+            <img src="asset/img/help/download_table_as_csv.png">
+            <div class="md-caption">Here is where you have to go to download a CSV, PDF export is not installed though</div>
+        </div>
+    </section>
+
+    <section>
+        <h2>Can I easily import a dataset in R?</h2>
+
+        <div>
+            Of course, give <em>http://vps117390.ovh.net:8888/api/expression/dataset/DESeq_1_18_0_umc_read_counts_table_without_8433/file</em>
+            a try. Copy/paste the link in the Import dataset => From web URL in RStudio and enjoy (be patient
+            though). <br/>
+            For your interest, this is one of the goals of interacting with resources. Ideally there should be an R
+            package that serves as a client (but we still have some time, surprises may happen.... or not).
+        </div>
+    </section>
+    <section>
+        <h2>What happens when there is another version that differs from the existing one in the database?</h2>
+
+        <div>
+            The will be a new entry added in the packages table of the database, but you will have to edit the metadata via phpmyadmin...<br />
+        </div>
+    </section>
+    <section>
+        <h2>The plots don't work !!! !! !</h2>
+
+        <div>
+            Actually, they do... what happens is that error management is lagging behind, i.e. some errors are not
+            propagated to the user interface.
+            That means that if the plot (mostly a heatmap) starts loading but never appears this is due to the fact
+            that the data behind the gene you
+            selected has no sufficient variation for the heatmap builder to understand what it has to do (a
+            shame).<br/>
+            But, I agree a message should tell you that (is the message above fine? ;-) )
+        </div>
+    </section>
+    <section>
+        <h2>The "New experiment" page is empty (!!! !! !)²</h2>
+
+        <div>
+            Indeed!
+        </div>
+    </section>
+</md-content>

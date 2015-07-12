@@ -1,0 +1,63 @@
+<div class="row">
+    <div class="col-md-2">
+        <h4>Gene expression analysis</h4>
+
+        <p>Gene expression analysis demo from dataset {{dataset}}</p>
+        <label>
+            Select chart type:
+            <select class="form-control" ng-model="selectedType" ng-change="typeChanged()"
+                    ng-options="value for value in charts"></select>
+        </label>
+        <label>
+            Select sample:
+            <select class="form-control" ng-model="selectedSample" ng-options="value for value in samples"></select>
+        </label>
+    </div>
+    <div class="col-md-10" id="genchart" my-chart="selectedtype">
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <form>
+            <label>
+                Filter:
+                <input class="form-control" ng-model="query"/>
+            </label>
+            <label>
+                Treshhold:
+                <input class="form-control" ng-model="meanWarn" ng-change="setMeanWarn"/>
+            </label>
+            <label>
+                Normalization method:
+                <select class="form-control" ng-model="query"/>
+            </label>
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Mean</th>
+                <th>SD</th>
+            </tr>
+            </thead>
+            <tbody ng-repeat="gene in genes | filter:query">
+            <tr ng-class="{warning : gene.zmean}">
+                <td>{{gene.name}}</td>
+                <td>{{gene.mean}}</td>
+                <td>{{gene.sd}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <h4>Experiment settings</h4>
+        <button class="btn btn-default">Export</button>
+    </div>
+</div>
+

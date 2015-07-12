@@ -1,0 +1,54 @@
+<div layout="row" layout-padding>
+    <div>
+        <h1>New experiment</h1>
+
+        <div ng-if="expJustCreated">
+            <md-text-float>
+                Ok, you created experiment {{expJustCreated}}. Next, upload data (it will be send to the raw data container) and then
+                link it to
+                your new experiment). This can be done <a href=""> here</a>
+            </md-text-float>
+        </div>
+
+        <div ng-if="errorMessageNewExperiment">
+            <md-text-float>
+                Something went wrong: {{errorMessageNewExperiment}}
+            </md-text-float>
+        </div>
+
+        <form flex="30">
+            <md-text-float>
+                Please format the public identifiers with letters only and use the underscore (_) as separator<br/>
+                NO BLANK SPACES. <br />
+                Example: my_experiment_is_cool (only A-Z and 0-9 characters pleeeeaaaase)
+            </md-text-float>
+            <md-input-container>
+                <label>Identifier (public identifier)</label>
+                <input ng-model="newExperiment.public_identifier"/>
+                <ng-messages>
+
+                </ng-messages>
+            </md-input-container>
+            <md-input-container>
+                <label>Description (short description of the goal of the experiment)</label>
+                <textarea ng-model="newExperiment.description"/>
+            </md-input-container>
+            <md-input-container>
+                <label>Type (e.g. Outlier mining analysis</label>
+                <textarea ng-model="newExperiment.type"/>
+            </md-input-container>
+            <md-button ng-click="createNewExperiment()">
+                Create
+            </md-button>
+        </form>
+    </div>
+    <div>
+        <h2>Delete experiments</h2>
+        <md-text-float>
+            The datasets linked to the experiment will not be deleted. <br/>
+            It is not possible to delete the raw data container
+        </md-text-float>
+        <p>TODO</p>
+    </div>
+</div>
+
