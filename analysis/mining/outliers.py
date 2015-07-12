@@ -148,26 +148,6 @@ def dbscan_outliers(data, genes, eps, min_samples, max_samples=1, as_json=True):
             pass
 
 
-# # # data_path = "D:\\Mining\\armel\\junctions_new_counts\\deseq_umc_raw_read_counts_table_without_8433.csv"
-# data_path = "C:\\Users\\armelh\\Documents\\RnaSeqMiner\\Data\\TCGA\\deseq_CRC_RNASeq_rawcounts.csv"
-# one_data_set = pd.read_csv(data_path, sep="\t", engine="python", index_col=0)
-# # one_data_set = data_set[-(data_set.sum(1) <= 50)]  # THRESHOLD of 5
-#
-# print one_data_set.iloc[:, 0].count()
-# outliers = []
-# #res = mad_outliers(one_data_set, one_data_set.index, threshold=99, min_low=0)
-# count = 0
-# with open('outliers_deseq_CRC_RNASeq_rawcounts.txt', 'w') as f:
-#     columns = ["identifier", 'name', "type", "samples", "distance", "range"]
-#     writer = csv.DictWriter(f, columns)
-#     writer.writeheader()
-#     for o in cluster_outliers(one_data_set, one_data_set.index, 10, 0.6, as_json=False):
-#         writer.writerow(o)
-
-# for o in dbscan_outliers(one_data_set, one_data_set.index, 4, as_json=False):
-# for o in dbscan_outliers(one_data_set, one_data_set.index, 2, 1, 2, as_json=False):
-
-
 
 
 
