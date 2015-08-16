@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.patches as mpatches
 from mpld3 import plugins
+from sklearn.decomposition import PCA
+from entities import identifier_generator as ig
+from config import APP_CONFIG
+import pandas as pd
 
 available_eda_plots = [
     "box",
@@ -65,16 +69,30 @@ def plot_comparison(dataset_identifiers, features, type="boxplot"):
     print features
     for d in dataset_identifiers:
         dataset = dr.get_data_frame_from_hdf(d, path)
-        subset = dataset.ix[features, :]
+        if type != "pca":
+            subset = dataset.ix[features, :]
+
         if type == "boxplot":
             axes[i].boxplot(subset)
+            create_csv_version(subset.transpose(), d, type, subset.columns)
         if type == "scatter":
             generator = "matplot"
             #print len(subset.ix[0, :])
             t = axes[i].plot(subset.transpose(), 'o')
+            create_csv_version(subset.transpose(), d, type, subset.columns)
             plugins.connect(f, plugins.PointLabelTooltip(t[0], labels=(list(subset.columns))))
+        if type == "pca":
+            print(type)
+            pca = PCA(n_components=2)
+            t_data = dataset.transpose()
+            pca_result = pca.fit(t_data)
+            pca_transformed = pca_result.transform(t_data)
+            t = axes[i].plot(pca_transformed[:, 0], pca_transformed[:, 1], 'o')
+            create_csv_version(pca_transformed, d, type, dataset.columns)
+            plugins.connect(f, plugins.PointLabelTooltip(t[0], labels=(list(dataset.columns))))
         axes[i].set_xlabel(d)
         axes[i].set_ylabel(str(features))
+
 
         i += 1
 
@@ -86,7 +104,12 @@ def plot_comparison(dataset_identifiers, features, type="boxplot"):
         bk.set_size_inches((sz[0]*2.5, sz[1]*2))
     return bk
 
+def create_csv_version(data, identifier, test, orig):
+    path = "/var/www/html/RNASeqTool/static/app/asset/dataplots/" + test + "_" + identifier + ".csv"
+    panda_data = pd.DataFrame(data, index=orig)
+    panda_data.to_csv(path, index=True)
 
+    return path
 
 def test():
     ds = ['DESeq_1_18_0_umc_read_counts_table_without_8433', 'DESeq_1_18_0_genentech_read_counts_table']
