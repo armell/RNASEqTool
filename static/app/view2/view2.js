@@ -165,7 +165,8 @@ angular.module('myApp.view2', ['ngRoute', 'ngMaterial', 'ngTouch'])
 
                         $scope.savedFiles.push(data);
                     }).error(function (data, satus, headers, config) {
-
+                        showToastie("could not process this file")
+                        $scope.savedFiles = [];
                     });
                 }
             }

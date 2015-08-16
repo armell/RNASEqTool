@@ -7,7 +7,8 @@
         Welcome on a prototype implementation of a Resource Oriented Knowledge discovery system specific to
         RNA-Seq.<br/>
         We're sorry for some usability issues that may occur by offering the software as-is. <br />
-        <b>In case something looks wrong, CTRL + F5 might fix the app blocked in a bad state</b><br/>
+        <b>In case something looks wrong, CTRL + F5 / APPLE + R or CMD + R might fix the app blocked in a bad state (e.g. plots not working, tables unresponsive)</b><br/>
+        There is no user session implemented, save info by exporting csv files or pdf plots.
     </md-subheader>
 </md-text-float>
 <div layout="row">
@@ -164,6 +165,7 @@
                     <div layout-padding layout="column">
                         <md-text-float><h3>Plotting options</h3></md-text-float>
                         <md-text-float ng-show="edaPlots">You selected {{edaPlots.name}}</md-text-float>
+                        <md-text-float ng-if="edaPlots.id == 'pca'"><b>use DESEQ2 for PCA</b></md-text-float>
                         <form>
                             <md-select ng-model="edaPlots">
                                 <md-select-label>Select a chart</md-select-label>
@@ -175,21 +177,18 @@
                                    ng-click="compareEdaDatasets()">
                             <md-tooltip>Comparison is made on the <b>Genes</b> that are selected, if applicable
                             </md-tooltip>
-                            Compare
+                            Plot
                         </md-button>
                     </div>
                 </div>
                 <md-progress-linear ng-if="exploreBusy" md-mode="indeterminate"></md-progress-linear>
                 <div layout="row" >
                     <div flex="50">
-                        <md-text-float ng-hide="!fullEda">
+                        <p ng-hide="!fullEda"><br /><br /><br />
                             Select <b>max two datasets</b>. Or two datasets normalized with different methods or two datasets that
                             have the same gene identifiers (Ensembl or other). <br />
                             The matching is done on these identifiers.
-                        </md-text-float>
-                        <md-text-float>
-                            Check file gives only the first 5 rows, not the entire file.
-                        </md-text-float>
+                        </p>
                         <md-list flex>
                             <md-list-item ng-repeat="ed in currentExperiment.datasets">
                                 <md-checkbox ng-model="ed.selected"></md-checkbox>
@@ -199,24 +198,10 @@
                             </md-list-item>
                         </md-list>
                     </div>
-                    <div flex="50" ng-hide="!fullEda">
-                        <table class="table">
-                            <th>Dimension</th>
-                            <th>Total</th>
-                            <th>Selected</th>
-                            <tbody>
-                            <tr>
-                                <th>Genes</th>
-                                <td>{{edaMeta.genes}}</td>
-                                <td>{{numberSelectedGenes}}</td>
-                            </tr>
-                            <tr>
-                                <th>Samples</th>
-                                <td>{{edaMeta.samples}}</td>
-                                <td>{{numberSelectedSamples}}</td>
-                            </tr>
-                            </tbody>
-                        </table>
+                    <div flex="50" ng-hide="!fullEda" ng-if="edaChart">
+                        <ul ng-repeat="d in availableDocuments">
+                            <li>Data for {{d.dataset}} is available <a href="{{d.url}}">here</a></li>
+                        </ul>
                     </div>
                 </div>
             </md-content>
@@ -429,7 +414,8 @@
             <div ng-if="processingInProgress || miningInProgress" layout-padding>
                 <md-progress-linear md-mode="indeterminate"></md-progress-linear>
                 <br/>
-                <strong ng-if="miningInProgress">{{ gridOptions.data.length }} rows imported</strong>
+<!--                <strong ng-if="miningInProgress">{{ rowsImported }} rows imported</strong>
+                <md-button>Refresh</md-button>-->
             </div>
             <md-divider></md-divider>
             <div layout="row">
@@ -440,20 +426,12 @@
                                 <button type="button" class="close" aria-label="Close" ng-click="closeAlert5 = true">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
-                                In this panel, you will find a list of the jobs you created on the previous part
-                                (Datasets and jobs) or a list of data sets that are
-                                attached to the current experiment.
-                                <ul>
-                                    <li>With Retrieve Genes you will get a list of the genes that are in the RNA-Seq
-                                        counts matrix
-                                    </li>
-                                    <li>With Execute Job, you will perform the outlier mining and get outliers in
-                                        Real-time
-                                    </li>
-                                    <li>Remark: It may happen that the outliers are not streamed... in any case, leave
-                                        the page open while you see the loading animation
-                                    </li>
-                                </ul>
+                                Now you can <b>reuse a previous job</b> by:<br />
+                                <ol>
+                                    <li>Exporting the results as csv from the grid (grid menu -> export all as csv)</li>
+                                    <li>Later, Select the corresponding mining task but don't execute it</li>
+                                    <li>Import the csv file in the grid (grid menu -> import)</li>
+                                </ol>
                         </md-text-float>
                         <div layout-padding>
                             <md-text-float ng-if="!currentExpIdentifier">
@@ -467,6 +445,7 @@
                             <md-text-float>
                                 <md-subheader class="md-warn">
                                     Please note that the export to PDF module is not installed (but CSV is ok).
+                                    <b>For reasons related to performance and memory, new rows are now added when streaming is ready and not when one is available.</b><br />
                                 </md-subheader>
                             </md-text-float>
                             <p ng-hide="selectedDataSet == null" class="md-caption">
@@ -497,26 +476,14 @@
 
                             <md-whiteframe layout layout-align="center center">
                                 <div class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection
-                                     ui-grid-exporter
+                                     ui-grid-exporter ui-grid-importer ui-grid-resize-columns
                                      id="sampleValuesTableMining">
                                 </div>
                             </md-whiteframe>
                         </div>
                     </md-card-content>
                     <md-action-bar layout="row" layout-align="end center">
-                        <md-select ng-model="selectedDataSet" flex="10">
-                            <md-select-label>
-                                Select a dataset
-                            </md-select-label>
-                            <md-option ng-value="d" ng-repeat="d in datasets">
-                                {{d.data.public_identifier}}
-                            </md-option>
-                        </md-select>
-
-                        <md-button ng-disabled="processingInProgress" ng-click="sampleSelected()" class="md-raised">
-                            Retrieve genes
-                        </md-button>
-                        <md-select ng-model="existingMiningTask" flex="20">
+                        <md-select ng-model="existingMiningTask">
                             <md-select-label>
                                 Select an existing mining task
                             </md-select-label>

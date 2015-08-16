@@ -32,6 +32,7 @@ angular.module('myApp.expression', ['ngRoute'])
             //var base_path = "http://vps117390.ovh.net:8888/api";
             //var base_path = "http://127.0.0.1:5000/api";
             var base_path = "http://wgs11.op.umcutrecht.nl/RNASeqTool/api";
+            var doc_path = "http://wgs11.op.umcutrecht.nl/RNASeqTool/static/app/asset/dataplots";
             $scope.currentExpIdentifier = null;
             $scope.selectedDataSet = null;
             $scope.availableExperiments = null;
@@ -49,7 +50,7 @@ angular.module('myApp.expression', ['ngRoute'])
             $scope.columns = [
                 {name: 'id', field: 'identifier'},
                 {name: 'name', field: 'name'},
-                {name: 'type', field: 'type'},
+                {name: 'type', field: 'type'}
                 /*                {
                  name: 'distribution',
                  cellTemplate: '<button class="btn btn-default" ng-click="grid.appScope.showMe()">Sample distribution</button>'
@@ -80,7 +81,8 @@ angular.module('myApp.expression', ['ngRoute'])
             //plots for eda panel
             $scope.plotsForEda = [
                 {id: "boxplot", name: "Boxplot"},
-                {id: "scatter", name: "Scatter plot"}
+                {id: "scatter", name: "Scatter plot"},
+                {id: "pca", name: "PCA (on log transformed)"}
             ];
 
             $scope.techForEda = [
@@ -93,21 +95,27 @@ angular.module('myApp.expression', ['ngRoute'])
             $scope.gridOptions = {
                 columnDefs: $scope.columns,
                 enableRowSelection: true,
-                enableSelectAll: true,
+                enableSelectAll: false,
                 paginationPageSizes: [25, 50, 75],
                 paginationPageSize: 25,
                 enableSorting: true,
                 enableFiltering: true,
                 enableGridMenu: true,
-                exporterCsvLinkElement: angular.element(document.querySelectorAll(".custom-csv-link-location"))
+                exporterCsvLinkElement: angular.element(document.querySelectorAll(".custom-csv-link-location")),
+                flatEntityAccess: false,
+                importerDataAddCallback: function ( grid, newObjects ) {
+                    $scope.gridOptions.data = newObjects;
+                }
             };
+
+
 
             // options for eda grid
             $scope.edaOptions = {
                 columnDefs: $scope.edaColumns,
                 enableRowSelection: true,
                 enableSelectAll: false,
-                multiSelect:false,
+                multiSelect: false,
                 paginationPageSizes: [25, 50, 75],
                 paginationPageSize: 25,
                 enableSorting: true,
@@ -136,7 +144,6 @@ angular.module('myApp.expression', ['ngRoute'])
                     $scope.selectedGenesFromTable = $scope.gridApi.selection.getSelectedRows();
                     $scope.selected_features = $scope.selectedGenesFromTable;
                     //display selected rows in console
-                    $log.log($scope.gridApi.selection.getSelectedRows());
                 });
             };
 
@@ -147,7 +154,6 @@ angular.module('myApp.expression', ['ngRoute'])
                 gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                     $scope.selectedGenesFromEdaTable = $scope.edaGridApi.selection.getSelectedRows();
                     $scope.numberSelectedGenes = $scope.selectedGenesFromEdaTable.length;
-                    $log.log($scope.gridApi.selection.getSelectedRows());
                 });
             };
 
@@ -158,7 +164,6 @@ angular.module('myApp.expression', ['ngRoute'])
                 gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                     $scope.selectedSamplesFromEdaTable = $scope.eda2GridApi.selection.getSelectedRows();
                     $scope.numberSelectedSamples = $scope.selectedSamplesFromEdaTable.length;
-                    $log.log($scope.gridApi.selection.getSelectedRows());
                 });
             };
 
@@ -172,10 +177,11 @@ angular.module('myApp.expression', ['ngRoute'])
             //tracks if the mining task selected has changed an sets the selected dataset
             $scope.$watch('existingMiningTask', function (newValue, oldValue) {
                 $log.log('changed mining task');
-                $log.log($scope.existingMiningTask);
                 if ($scope.existingMiningTask != null) {
+                    if($scope.addedColumns == undefined || $scope.addedColumns == false)
+                        add();
                     $scope.selectedDataSet = $scope.existingMiningTask.data.dataset;
-                    $scope.apply();
+                    $scope.gridOptions.exporterCsvFilename = $scope.existingMiningTask.data.public_identifier + '.csv';
                 }
             });
 
@@ -185,7 +191,6 @@ angular.module('myApp.expression', ['ngRoute'])
                     $http.get(base_path + "/expression/experiment/" + identifier, {headers: {"Accept": "application/json"}}).then(function (payload) {
                         $scope.selectedGenesFromTable = [];
                         $scope.currentExperiment = payload.data;
-                        $log.log($scope.currentExperiment);
                         $scope.datasets = $scope.currentExperiment.datasets;
                         $scope.selectedDataSet = $scope.datasets[0];
                         $scope.currentExpIdentifier = $scope.currentExperiment.experiment;
@@ -195,34 +200,31 @@ angular.module('myApp.expression', ['ngRoute'])
                         });
 
                         mainStorage.last_experiment = $scope.currentExperiment;
-                        visualizationStorage.last_grid = $scope.gridOptions;
+                        //visualizationStorage.last_grid = $scope.gridOptions;
                         visualizationStorage.selected_features = $scope.selectedGenesFromTable;
                         visualizationStorage.last_columns = $scope.columns;
 
                         $log.log("experiment loaded");
-                        $log.log($scope.datasets);
-                        $log.log($scope.selectedDataSet);
-                        $log.log(payload);
                     });
-/*
-                    $http.get(base_path + "/expression/methods/", {headers: {"Accept": "application/json"}})
-                        .success(function (payload) {
-                            $scope.selectedGenesFromTable = [];
-                            $scope.currentExperiment = payload.data;
-                            $log.log($scope.currentExperiment);
-                            $scope.datasets = $scope.currentExperiment.datasets;
-                            $scope.selectedDataSet = $scope.datasets[0];
-                            mainStorage.last_experiment = $scope.currentExperiment;
-                            visualizationStorage.last_grid = $scope.gridOptions;
-                            visualizationStorage.selected_features = $scope.selectedGenesFromTable;
+                    /*
+                     $http.get(base_path + "/expression/methods/", {headers: {"Accept": "application/json"}})
+                     .success(function (payload) {
+                     $scope.selectedGenesFromTable = [];
+                     $scope.currentExperiment = payload.data;
+                     $log.log($scope.currentExperiment);
+                     $scope.datasets = $scope.currentExperiment.datasets;
+                     $scope.selectedDataSet = $scope.datasets[0];
+                     mainStorage.last_experiment = $scope.currentExperiment;
+                     visualizationStorage.last_grid = $scope.gridOptions;
+                     visualizationStorage.selected_features = $scope.selectedGenesFromTable;
 
-                            $log.log("experiment loaded");
-                            $log.log($scope.datasets);
-                            $log.log($scope.selectedDataSet);
-                            $log.log(payload);
-                        }).error(function () {
+                     $log.log("experiment loaded");
+                     $log.log($scope.datasets);
+                     $log.log($scope.selectedDataSet);
+                     $log.log(payload);
+                     }).error(function () {
 
-                        });*/
+                     });*/
                 }
                 else {
                     /*
@@ -232,12 +234,11 @@ angular.module('myApp.expression', ['ngRoute'])
                      */
                     $log.log("reset");
                     loadExperimentsList();
-                    $log.log(mainStorage.last_experiment);
                     $scope.currentExperiment = mainStorage.last_experiment;
                     $scope.currentExpIdentifier = $scope.currentExperiment.experiment;
                     $scope.datasets = $scope.currentExperiment.datasets;
                     $scope.selectedDataSet = $scope.datasets[0];
-                    $scope.gridOptions = visualizationStorage.last_grid;
+                    //$scope.gridOptions = visualizationStorage.last_grid;
                     $scope.currentChart = visualizationStorage.last_chart;
 
                     //$scope.gridApi = visualizationStorage.grid_api;
@@ -247,40 +248,63 @@ angular.module('myApp.expression', ['ngRoute'])
             };
 
             $scope.compareEdaDatasets = function () {
+                try {
+                    $scope.exploreBusy = true;
+                    var datasets = [];
+                    var selectedGenes = [];
+                    var chart_type = $scope.edaPlots.id;
 
-                var datasets = [];
-                var selectedGenes = build_ids($scope.selectedGenesFromEdaTable);
-                var chart_type = $scope.edaPlots.id;
+                    if (chart_type != 'pca')
+                        selectedGenes = build_ids($scope.selectedGenesFromEdaTable);
 
-                for (var i = 0; i < $scope.currentExperiment.datasets.length; i++) {
-                    if ($scope.currentExperiment.datasets[i].selected == true) {
-                        var public_identifier = $scope.currentExperiment.datasets[i].data.public_identifier;
-                        datasets.push(public_identifier);
+                    for (var i = 0; i < $scope.currentExperiment.datasets.length; i++) {
+                        if ($scope.currentExperiment.datasets[i].selected == true) {
+                            var public_identifier = $scope.currentExperiment.datasets[i].data.public_identifier;
+                            datasets.push(public_identifier);
+                        }
                     }
+
+                    var message = {
+                        "compare_datasets": datasets,
+                        "features": selectedGenes,
+                        "chart_type": chart_type,
+                        "local": true
+                    };
+
+                    $http.post(base_path + '/expression/tasks', message, {
+                        headers: {
+                            "Accept": "text/html", //get plot as html
+                            "X-Testing": "testing"
+                        }
+                    }).success(function (data) {
+                        $scope.edaChart = $sce.trustAsHtml(data);
+
+                        $scope.availableDocuments = [];
+
+                        for (var i = 0; i < datasets.length; i++) {
+                            var doc_path_end = doc_path + "/" + chart_type + "_" + datasets[i] + ".csv";
+                            //doc_path_end = doc_path_end;
+                            $scope.availableDocuments.push({dataset: datasets[i], url: doc_path_end});
+                        }
+
+                        $scope.exploreBusy = false;
+                    }).error(function (data) {
+                        $scope.exploreBusy = false;
+                        $mdToast.show(
+                            $mdToast.simple()
+                                .content(data)
+                                .position($scope.getToastPosition())
+                                .hideDelay(3000)
+                        );
+                    });
                 }
-
-                var message = {
-                    "compare_datasets":datasets,
-                    "features":selectedGenes,
-                    "chart_type":chart_type,
-                    "local":true
-                };
-
-                $http.post(base_path + '/expression/tasks', message, {
-                    headers: {
-                        "Accept": "text/html", //get plot as html
-                        "X-Testing": "testing"
-                    }
-                }).success(function (data) {
-                    $scope.edaChart = $sce.trustAsHtml(data);
+                catch (err) {
                     $scope.exploreBusy = false;
-                }).error(function () {
-                    $scope.exploreBusy = false;
-                });
+                    showToast("could not process...");
+                }
             };
 
             $scope.loadEdaDatasets = function () {
-                $log.log($scope.selectedEdaData);
                 $scope.exploreBusy = true;
                 $scope.edaOptions.data = null;
                 $scope.edaOptions2.data = null;
@@ -319,7 +343,6 @@ angular.module('myApp.expression', ['ngRoute'])
                 $log.log($scope.selectedDataSet.href);
                 $scope.processingInProgress = true;
                 $http.get($scope.selectedDataSet.href + '/genes', {headers: {"Accept": "application/json"}}).success(function (data) {
-                    $log.log(data);
                     $scope.gridOptions.data = data;
                     $scope.processingInProgress = false;
                 }).error(function (data) {
@@ -338,14 +361,12 @@ angular.module('myApp.expression', ['ngRoute'])
             };
 
             $scope.selectMiningMethod = function (method) {
-                $log.log(method);
                 $scope.mine = method;
             };
 
 
             var getInformationAboutNormMethod = function (method_identifier) {
                 $http.get(base_path + '/expression/method/' + method_identifier + '/all', {headers: {"Accept": "application/json"}}).success(function (data) {
-                    $log.log(data);
 
                     $scope.infoMethods = data;
                 }).error(function (data) {
@@ -355,7 +376,6 @@ angular.module('myApp.expression', ['ngRoute'])
 
             var getInformationAboutMineMethod = function (method_identifier) {
                 $http.get(base_path + '/expression/method/' + method_identifier + '/all', {headers: {"Accept": "application/json"}}).success(function (data) {
-                    $log.log(data);
 
                     $scope.infoMethodsMine = data;
                 }).error(function (data) {
@@ -419,11 +439,21 @@ angular.module('myApp.expression', ['ngRoute'])
 
                     }).error(function (data, status, headers, config) {
                         $log.log("BOOOM" + data);
+                        showToast(data);
                         $scope.processingInProgress = false;
                     });
             };
 
             //$scope.exploreData();
+
+            function showToast(message) {
+                $mdToast.show(
+                    $mdToast.simple()
+                        .content(message)
+                        .position($scope.getToastPosition())
+                        .hideDelay(3000)
+                );
+            }
 
             $scope.preprocess = function () {
                 $log.log("called preprocess");
@@ -463,7 +493,8 @@ angular.module('myApp.expression', ['ngRoute'])
                 }
             };
             var add = function () {
-                visualizationStorage.last_columns.push({
+                $scope.addedColumns = true;
+                $scope.gridOptions.columnDefs.push({
                     field: 'samples', type: 'number', filters: [
                         {
                             condition: uiGridConstants.filter.GREATER_THAN,
@@ -475,7 +506,7 @@ angular.module('myApp.expression', ['ngRoute'])
                         }
                     ]
                 });
-                visualizationStorage.last_columns.push({
+                $scope.gridOptions.columnDefs.push({
                     field: 'distance', type: 'number', filters: [
                         {
                             condition: uiGridConstants.filter.GREATER_THAN,
@@ -487,7 +518,7 @@ angular.module('myApp.expression', ['ngRoute'])
                         }
                     ]
                 });
-                visualizationStorage.last_columns.push({
+                $scope.gridOptions.columnDefs.push({
                     field: 'range', type: 'number', filters: [
                         {
                             condition: uiGridConstants.filter.GREATER_THAN,
@@ -499,27 +530,23 @@ angular.module('myApp.expression', ['ngRoute'])
                         }
                     ]
                 });
+
+                $scope.gridOptions.columnDefs.push({
+                    field: 'bag', type: 'string'
+                });
             };
 
             $scope.executeJob = function (selectedJob) {
-                var new_data = [];
-                visualizationStorage.last_grid.data = [];
-                $scope.$apply();
+                $scope.gridOptions.data = [];
                 $scope.miningInProgress = true;
-                add();
-                oboe({
-                    url: selectedJob,
-                    headers: {"Accept": "application/json"},
-                    cached: false
-                }).path('outliers.*', function () {
-                    $log.log("got something here");
-                }).node('outliers.*', function (outlier) {
-                    //new_data.push(outlier)
-                    visualizationStorage.last_grid.data.push(outlier);
-                    $scope.$apply();
-                    //$log.log('Go check this ' + outlier.identifier);
-                }).done(function (things) {
-                    $log.log(things.length);
+                $scope.rowsImported = 0;
+                var streamedRows = [];
+                var i = 0;
+                if (!$scope.addedColumns)
+                    add();
+
+                $http.get(selectedJob, {headers: {"Accept": "application/json"}}).success(function (data) {
+                    $scope.gridOptions.data = data.outliers;
                     $scope.miningInProgress = false;
                     $mdToast.show(
                         $mdToast.simple()
@@ -527,15 +554,60 @@ angular.module('myApp.expression', ['ngRoute'])
                             .position($scope.getToastPosition())
                             .hideDelay(3000)
                     );
-                }).fail(function (things) {
+                }).error(function () {
                     $scope.miningInProgress = false;
                     $mdToast.show(
                         $mdToast.simple()
                             .content('Sorry, something went wrong !')
                             .position($scope.getToastPosition())
-                            .hideDelay(3000)
-                    );
+                            .hideDelay(3000));
                 });
+
+
+                /*               oboe({
+                 url: selectedJob,
+                 headers: {"Accept": "application/json"},
+                 cached: false
+                 }).node('outliers.*', function (outlier) {
+                 /!*               $scope.gridOptions.data.push({identifier:outlier.identifier,
+                 name:outlier.name,
+                 samples:outlier.samples,
+                 distance:outlier.distance,
+                 range:outlier.range,
+                 bag:outlier.bag,
+                 type:outlier.type});*!/
+                 streamedRows[i++] = {
+                 identifier: outlier.identifier,
+                 name: outlier.name,
+                 samples: outlier.samples,
+                 distance: outlier.distance,
+                 range: outlier.range,
+                 bag: outlier.bag,
+                 type: outlier.type
+                 };
+                 $scope.rowsImported = streamedRows.length;
+                 outlier = null;
+                 return oboe.drop();
+                 }).done(function () {
+                 //$log.log(things);
+                 //$scope.gridOptions.data = things.outliers;
+                 $scope.gridOptions.data = streamedRows;
+                 $scope.miningInProgress = false;
+                 $mdToast.show(
+                 $mdToast.simple()
+                 .content('Everything is loaded!')
+                 .position($scope.getToastPosition())
+                 .hideDelay(3000)
+                 );
+                 }).fail(function () {
+                 $scope.miningInProgress = false;
+                 $mdToast.show(
+                 $mdToast.simple()
+                 .content('Sorry, something went wrong !')
+                 .position($scope.getToastPosition())
+                 .hideDelay(3000)
+                 );
+                 });*/
             };
 
             $scope.scheduleJob = function () {
@@ -561,6 +633,9 @@ angular.module('myApp.expression', ['ngRoute'])
                                 .position($scope.getToastPosition())
                                 .hideDelay(3000)
                         );
+                        $http.get(base_path + '/expression/tasks', {headers: {"Accept": "application/json"}}).success(function (data) {
+                            $scope.existingMiningTasks = data;
+                        });
                     }).error(function (data) {
                         $mdToast.show(
                             $mdToast.simple()

@@ -11,6 +11,8 @@ angular.module('myApp', [
     'ui.grid.pagination',
     'ui.grid.selection',
     'ui.grid.exporter',
+    'ui.grid.importer',
+    'ui.grid.resizeColumns',
     'ngTouch',
     'ngMaterial',
     'ngAnimate',

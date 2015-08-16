@@ -27,11 +27,15 @@ class Stream(restful.Resource):
         print(taskId)
         mining_task = pr.get_mining_task(taskId)
 
-        return Response(stream_with_context(
-            ed.stream_detect_outliers_in_data(mining_task.dataset.public_identifier,
-                                              mining_task.method.public_identifier,
-                                              max_samples=mining_task.min_samples, min_dist=mining_task.min_distance,
-                                              mining_id=mining_task.id)), content_type="application/json")
+        try:
+
+            return Response(stream_with_context(
+                ed.stream_detect_outliers_in_data(mining_task.dataset.public_identifier,
+                                                  mining_task.method.public_identifier,
+                                                  max_samples=mining_task.min_samples, min_dist=mining_task.min_distance,
+                                                  mining_id=mining_task.id)), content_type="application/json")
+        except:
+            return cr.StringApiResource("Could not stream resource")
 
 
 experiment_parser = reqparse.RequestParser()
@@ -48,9 +52,12 @@ class Experiments(restful.Resource):
 
     def post(self):
         args = experiment_parser.parse_args()
-        res = ex.create_experiment(args.public_identifier, args.description, args.type)
+        try:
+            res = ex.create_experiment(args.public_identifier, args.description, args.type)
 
-        return cr.JsonResource(res.public_identifier)
+            return cr.JsonResource(res.public_identifier), 201
+        except:
+            return cr.StringApiResource("could not create this experiment"), 400
 
 
 
@@ -126,36 +133,39 @@ class Charts(restful.Resource):
 
 
     def post(self):
-        args = chart_parser.parse_args()
-        selected_genes = args["gene_set"]
-        selected_dataset = args["dataset_identifier"]
-        selected_charttype = args["chart_type"]
-        print args["chart_type"]
+        try:
+            args = chart_parser.parse_args()
+            selected_genes = args["gene_set"]
+            selected_dataset = args["dataset_identifier"]
+            selected_charttype = args["chart_type"]
+            print args["chart_type"]
 
-        request_to_handle = request.accept_mimetypes.best_match(['application/pdf', 'text/html'])
+            request_to_handle = request.accept_mimetypes.best_match(['application/pdf', 'text/html'])
 
-        if request_to_handle == 'application/pdf':
-            accept = "pdf"
-        else:
-            accept = "html"
+            if request_to_handle == 'application/pdf':
+                accept = "pdf"
+            else:
+                accept = "html"
 
-        chart_resource = nc.sample_distribution_for_genes(selected_dataset, selected_genes,
-                                                          title=selected_dataset,
-                                                          chart_type=selected_charttype,
-                                                          chart_rendering=accept)
+            chart_resource = nc.sample_distribution_for_genes(selected_dataset, selected_genes,
+                                                              title=selected_dataset,
+                                                              chart_type=selected_charttype,
+                                                              chart_rendering=accept)
 
-        # returns the write rendering based on generator [bokeh with bokehjs or matplot with mpld3]
-        if accept == "html":
-            if chart_resource["generator"] == "bokeh":
-                return cr.BokehResource(chart_resource["chart"]), 201
-            if chart_resource["generator"] == "matplot":
-                return cr.MatPlotLibResource(chart_resource["chart"]), 201
+            # returns the write rendering based on generator [bokeh with bokehjs or matplot with mpld3]
+            if accept == "html":
+                if chart_resource["generator"] == "bokeh":
+                    return cr.BokehResource(chart_resource["chart"]), 201
+                if chart_resource["generator"] == "matplot":
+                    return cr.MatPlotLibResource(chart_resource["chart"]), 201
 
-        if accept == "pdf":
-            filename = ig.get_generated_guid_as_string() + ".pdf"
-            file_path = APP_CONFIG["domain"] + APP_CONFIG["static_documents"]
-            chart_resource["chart"].savefig("." + APP_CONFIG["static_documents"] + filename)
-            return cr.StringApiResource(file_path + filename), 201
+            if accept == "pdf":
+                filename = ig.get_generated_guid_as_string() + ".pdf"
+                file_path = APP_CONFIG["domain"] + APP_CONFIG["static_documents"]
+                chart_resource["chart"].savefig("." + APP_CONFIG["static_documents"] + filename)
+                return cr.StringApiResource(file_path + filename), 201
+        except:
+            return cr.StringApiResource("Chart creation failed"), 400
 
 
 class Chart(restful.Resource):
@@ -216,7 +226,7 @@ class Datasets(restful.Resource):
                                                      experiment_identifier="raw_data_container")  # For demo -> add exp identifier
                     server_hash = ig.md5_for_file(fl)
                 print(filename + " is saved")
-                os.remove(filename)
+
                 print("file removed")
                 return cr.JsonResource(
                     {"filename": filename, "intern_identifier": data_entity.intern_identifier,
@@ -224,7 +234,10 @@ class Datasets(restful.Resource):
             except IntegrityError:
                 return cr.StringApiResource("Public identifier already taken"), 409
             except:
-                return cr.StringApiResource("An error has occured, check if your data set comply with the expected format")
+                return cr.StringApiResource("An error has occured, check if your data set comply with the expected format"), 400
+            finally:
+                if filename is not None:
+                    os.remove(filename)
         else:
             # a new dataset is created based on source
             try:
@@ -248,11 +261,11 @@ class Datasets(restful.Resource):
                 return cr.JsonResource(eto.SummaryDatasetView(new_data_set).to_json()), 201
             except Exception as e:
                 print(e.__str__())
-                return cr.StringApiResource("Explosion! Tool down..."), 409
+                return cr.StringApiResource("Explosion! Tool down..."), 400
 
 
 class Dataset(restful.Resource):
-    def get(self, datasetId, elements=None):
+    def get(self, datasetId, elements="file"):
         print("get dataset")
         print(datasetId)
         path = APP_CONFIG["application_files_location"] + APP_CONFIG["application_store_name"]
@@ -263,6 +276,7 @@ class Dataset(restful.Resource):
             # convert public to intern...
             return cr.DataFrameApiResource(dr.get_data_frame_from_hdf(datasetId, path), datasetId + ".tsv"), 201
         if elements == "genes":
+            print("retrieving genes")
             dataset_with_ensembl = dr.get_dataset_genes_with_ensembl_info(datasetId, path)
 
             return cr.JsonResource(dataset_with_ensembl), 201
@@ -317,9 +331,12 @@ class Tasks(restful.Resource):
     def post(self):
         args = job_parser.parse_args()
         if args.local:
-            print args.compare_datasets
-            if args.compare_datasets is not None:
-                return cr.MatPlotLibResource(dp.plot_comparison(args.compare_datasets, args.features, args.chart_type))
+            try:
+                print args.compare_datasets
+                if args.compare_datasets is not None:
+                    return cr.MatPlotLibResource(dp.plot_comparison(args.compare_datasets, args.features, args.chart_type))
+            except:
+                return cr.StringApiResource("There was an issue when comparing data sets, check for identifiers or if the lists are equal")
 
         method = args.method_identifier
         dataset = args.dataset_identifier

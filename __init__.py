@@ -80,7 +80,7 @@ api.add_resource(expression_resources.Task, "/api/expression/task/<string:taskId
 
 @app.route('/')
 def index():
-    return redirect("http://wgs11.op.umcutrecht.nl/RNASeqTool/static/app/index.html", code="302")
+    return redirect("http://URL/RNASeqTool/static/app/index.html", code="302")
 
 @app.route('/api')
 def api():

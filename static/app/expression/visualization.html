@@ -22,14 +22,7 @@
                         You selected <b>{{selectedMineChart.name}}</b> as a chart type
                     </p>
                 </md-text-float>
-                <md-select id="selectChartTypeMining" ng-model="selectedMineChart" flex="50">
-                    <md-select-label>Select a type of chart</md-select-label>
-                    <md-option ng-value="c" ng-repeat="c in chartTypes">{{c.name}}</md-option>
-                </md-select>
-                <md-button ng-click="compareGeneDistribution('html', selectedMineChart)" class="md-raised">
-                    Show chart
-                </md-button>
-                <md-button class="md-raised" ng-show="currentChart" ng-click="compareGeneDistribution('pdf', selectedMineChart)">Export as PDF</md-button>
+
             </md-card-content>
         </md-card>
         <div flex="60">
