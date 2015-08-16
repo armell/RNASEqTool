@@ -29,10 +29,7 @@ angular.module('myApp.expression', ['ngRoute'])
                 return gene_ids;
             };
 
-            //var base_path = "http://vps117390.ovh.net:8888/api";
-            //var base_path = "http://127.0.0.1:5000/api";
-            var base_path = "http://wgs11.op.umcutrecht.nl/RNASeqTool/api";
-            var doc_path = "http://wgs11.op.umcutrecht.nl/RNASeqTool/static/app/asset/dataplots";
+            var base_path = "http://127.0.0.1:5000/api";
             $scope.currentExpIdentifier = null;
             $scope.selectedDataSet = null;
             $scope.availableExperiments = null;

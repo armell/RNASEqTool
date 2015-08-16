@@ -16,9 +16,7 @@ angular.module('myApp.view2', ['ngRoute', 'ngMaterial', 'ngTouch'])
     }])
 
     .controller('View2Ctrl', ["$scope", "$http", "$log", "$sce", "$upload", "$mdDialog", "$mdToast", function ($scope, $http, $log, $sce, $upload, $mdDialog, $mdToast) {
-        //var base_url = "http://vps117390.ovh.net:8888/api";
-        //var base_url = 'http://127.0.0.1:5000/api';
-        var base_url = "http://wgs11.op.umcutrecht.nl/RNASeqTool/api";
+		var base_url = 'http://127.0.0.1:5000/api';
         $scope.displayFiles = [];
         var load_page = function () {
 
