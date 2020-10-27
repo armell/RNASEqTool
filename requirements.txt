@@ -31,7 +31,7 @@ colorama==0.3.3
 conda==3.7.0
 conda-build==1.8.2
 configobj==5.0.6
-cryptography==0.5.4
+cryptography==3.2
 cytoolz==0.7.0
 decorator==3.4.0
 docutils==0.12
