@@ -6,7 +6,7 @@ Markdown==2.6.2
 MarkupSafe==0.23
 PIL==1.1.7
 PyYAML==3.11
-Pygments==2.0.2
+Pygments==2.7.4
 SQLAlchemy==0.9.7
 Sphinx==1.2.3
 Werkzeug==0.10.4
