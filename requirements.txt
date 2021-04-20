@@ -9,7 +9,7 @@ PyYAML==3.11
 Pygments==2.0.2
 SQLAlchemy==0.9.7
 Sphinx==1.2.3
-Werkzeug==0.10.4
+Werkzeug==0.15.3
 XlsxWriter==0.5.7
 argcomplete==0.8.1
 astropy==0.4.2
