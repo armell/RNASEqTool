@@ -24,7 +24,7 @@ bokeh==0.9.0
 boto==2.32.1
 casuarius==1.1
 cdecimal==2.3
-certifi==2015.04.28
+certifi==2022.12.7
 cffi==0.8.6
 chaco==4.4.1
 colorama==0.3.3
